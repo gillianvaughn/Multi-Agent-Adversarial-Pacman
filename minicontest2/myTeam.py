@@ -141,8 +141,20 @@ class OffensiveReflexAgent(ReflexCaptureAgent):
     #features for food 
     if len(foodList) > 0: # This should always be True,  but better safe than sorry
       myPos = successor.getAgentState(self.index).getPosition()
-      minDistance = min([self.getMazeDistance(myPos, food) for food in foodList])
-      features['distanceToFood'] = minDistance
+      minDistance = [self.getMazeDistance(myPos, food) for food in foodList]
+      minFoodIndex = minDistance.index(min(minDistance))
+      minFood = foodList[minFoodIndex]
+      hasWallCount = 0
+      hasWallCount += successor.hasWall(minFood[0] + 1, minFood[1])
+      hasWallCount += successor.hasWall(minFood[0], minFood[1] + 1)
+      hasWallCount += successor.hasWall(minFood[0] - 1, minFood[1])
+      hasWallCount += successor.hasWall(minFood[0], minFood[1] - 1)
+      foodWalls = successor.getWalls().asList()
+      
+      features['distanceToFood'] = min(minDistance)
+      #if(successor.getAgentState(m))
+      #if successor.getAgentState(self.index).numCarrying == 5:
+        
 
     #features for capsules
     capsules = self.getCapsules(successor)
@@ -163,16 +175,35 @@ class OffensiveReflexAgent(ReflexCaptureAgent):
       oppScaredTimer = successor.getAgentState(minOpps).scaredTimer
       if oppScaredTimer is 0:
         features['distanceToGhosts'] = min(minGhostDistance)
-        if min(minGhostDistance) <= 5:
-          features['distanceToGhosts'] = 1
+        if min(minGhostDistance) <= 2:
+          features['distanceToGhosts'] = min(minGhostDistance)*2
+          features['distanceToFood'] = 0
+        if min(minGhostDistance) <= 5 and hasWallCount == 3:
+          features['distanceToFood'] = 0
       else:
-        features['distanceToGhosts'] = 0
+        features['distanceToGhosts'] = -min(minGhostDistance)
+
+
+
+      #if successor.getAgentState(self.index).numCarrying == 5:
+        #features['distanceToGhosts'] = -10000
+    
+    teammates = self.getTeam(successor)
+    if len(teammates) >0: #should always be true
+      myPos = successor.getAgentState(self.index).getPosition()
+      myTeammatePos = successor.getAgentState(teammates[0]).getPosition()
+      dist = self.getMazeDistance(myPos, myTeammatePos)
+      if successor.getAgentState(self.index).numCarrying == 1:
+        features['goHome'] = dist*3
+      else:
+        features['goHome'] = 0
+    
     return features
 
   
   def getWeights(self, gameState, action):
     #getAgentState.scaredTimer = 0 --> not scared 
-    return {'successorScore': 100, 'distanceToFood': -20, 'distanceToGhosts': 15, 'distancetoCapsule': -10}
+    return {'successorScore': 100, 'distanceToFood': -20, 'distanceToGhosts': 15, 'distancetoCapsule': -10, 'goHome': -30}
 
 class DefensiveReflexAgent(ReflexCaptureAgent):
   """
@@ -204,6 +235,10 @@ class DefensiveReflexAgent(ReflexCaptureAgent):
     if action == Directions.STOP: features['stop'] = 1
     rev = Directions.REVERSE[gameState.getAgentState(self.index).configuration.direction]
     if action == rev: features['reverse'] = 1
+
+    myScaredTimer = successor.getAgentState(self.index).scaredTimer
+    if myScaredTimer is not 0:
+      features['invaderDistance'] = -min(dists)
 
     return features
 
