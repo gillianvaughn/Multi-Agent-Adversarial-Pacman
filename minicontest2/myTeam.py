@@ -151,7 +151,14 @@ class OffensiveReflexAgent(ReflexCaptureAgent):
       hasWallCount += successor.hasWall(minFood[0], minFood[1] - 1)
       foodWalls = successor.getWalls().asList()
       
-      features['distanceToFood'] = min(minDistance)
+      if min(minDistance) <= 2:
+        features['distanceToFood'] = -10
+      else:
+        features['distanceToFood'] = min(minDistance)
+      
+      #features['distanceToFood'] = min(minDistance)
+      if self.observationHistory[-1].getAgentState(self.index) == successor.getAgentState(self.index):
+        features['distanceToFood'] = max(minDistance)
       #if(successor.getAgentState(m))
       #if successor.getAgentState(self.index).numCarrying == 5:
         
@@ -177,9 +184,9 @@ class OffensiveReflexAgent(ReflexCaptureAgent):
         features['distanceToGhosts'] = min(minGhostDistance)
         if min(minGhostDistance) <= 2:
           features['distanceToGhosts'] = min(minGhostDistance)*2
-          features['distanceToFood'] = 0
-        if min(minGhostDistance) <= 5 and hasWallCount == 3:
-          features['distanceToFood'] = 0
+          #features['distanceToFood'] = 0
+        if min(minGhostDistance) <= 3 and hasWallCount == 3 and min(minDistance) < 3:
+          features['distanceToFood'] = 10
       else:
         features['distanceToGhosts'] = -min(minGhostDistance)
 
@@ -187,16 +194,19 @@ class OffensiveReflexAgent(ReflexCaptureAgent):
 
       #if successor.getAgentState(self.index).numCarrying == 5:
         #features['distanceToGhosts'] = -10000
-    
+    '''
     teammates = self.getTeam(successor)
     if len(teammates) >0: #should always be true
       myPos = successor.getAgentState(self.index).getPosition()
-      myTeammatePos = successor.getAgentState(teammates[0]).getPosition()
-      dist = self.getMazeDistance(myPos, myTeammatePos)
-      if successor.getAgentState(self.index).numCarrying == 1:
-        features['goHome'] = dist*3
-      else:
-        features['goHome'] = 0
+      myTeammatePos = successor.getAgentState(teammates[1]).getPosition()
+    dist = self.getMazeDistance(myPos, (15.0, 5.0))
+  
+   
+    if successor.getAgentState(self.index).numCarrying == 1:
+      features['goHome'] = successor.getAgentState(self.index).numCarrying
+    else:
+      features['goHome'] = 0
+    '''
     
     return features
 
@@ -212,6 +222,7 @@ class DefensiveReflexAgent(ReflexCaptureAgent):
   could be like.  It is not the best or only way to make
   such an agent.
   """
+  offensiveTimer = 0
 
   def getFeatures(self, gameState, action):
     features = util.Counter()
